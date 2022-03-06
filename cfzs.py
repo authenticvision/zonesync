@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import dataclasses
-from typing import Optional
+import typing
+from typing import Optional, Iterable, Tuple
 
 import requests
 import netrc
@@ -19,7 +20,7 @@ class RR:
     ttl: int
     type: str
     content: str
-    cf_id: Optional[str] = dataclasses.field(compare=False)
+    cf_id: Optional[str] = dataclasses.field(default=None, compare=False)
 
 
 s = requests.Session()
@@ -70,14 +71,13 @@ def parse(f, origin):
                 ttl=int(m.group('ttl')),
                 type=m.group('type'),
                 content=m.group('content'),
-                cf_id=None,
             )
-            yield patch_rr(rr, origin)
+            yield normalize_rr(rr, origin)
         else:
             print(l)
 
 
-def patch_rr(rr, origin):
+def normalize_rr(rr, origin):
     if rr.name == '@':
         rr = dataclasses.replace(rr, name=origin)
     elif not rr.name.endswith(origin):
@@ -102,31 +102,36 @@ class CF:
 
 cf = CF()
 
-if __name__ == '__main__':
-    local = set(no_soa_or_ns(load_file('example.org.zone', 'example.org')))
-    remote = set(no_soa_or_ns(load_cf('example.org')))
-    added = local - remote
-    for rr in added:
-        print('+', rr)
-    removed = remote - local
-    for rr in removed:
-        print('-', rr)
 
+OldRR: typing.TypeAlias = Optional[RR]
+NewRR: typing.TypeAlias = Optional[RR]
+
+
+def diff(old: Iterable[RR], new: Iterable[RR]) -> Iterable[Tuple[OldRR, NewRR]]:
+    new = set(new)
+    old = set(old)
+    added = new - old
+    removed = old - new
     rem_it = iter(sorted(removed))
     r = next(rem_it)
     for a in sorted(added):
-        while r and (r.name, r.type) < (a.name, a.type):
-            cf.remove(r)
+        while r and r.name < a.name:
+            yield r, None
             r = next(rem_it, None)
-        if r and (r.name, r.type) == (a.name, a.type):
-            cf.update(r, a)
+        if r and r.name == a.name:
+            yield r, a
             r = next(rem_it, None)
         else:
-            cf.add(a)
-
+            yield None, a
     if r:
-        cf.remove(r)
-
+        yield r, None
     for r in rem_it:
-        cf.remove(r)
+        yield r, None
+
+
+if __name__ == '__main__':
+    local = set(no_soa_or_ns(load_file('example.org.zone', 'example.org')))
+    remote = set(no_soa_or_ns(load_cf('example.org')))
+    for old, new in diff(remote, local):
+        print('-', old, '+', new)
 
