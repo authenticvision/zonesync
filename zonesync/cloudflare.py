@@ -1,4 +1,3 @@
-import netrc
 import requests
 import requests.auth
 
@@ -17,8 +16,6 @@ class FuckOffAuth(requests.auth.AuthBase):
 
 class CloudFlare:
     def __init__(self, api_token=None):
-        if api_token is None:
-            api_token = netrc.netrc().authenticators('api.cloudflare.com')[2]
         self.session = s = requests.Session()
         s.headers['Authorization'] = f'Bearer {api_token}'
         s.auth = FuckOffAuth()
