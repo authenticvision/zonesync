@@ -1,3 +1,5 @@
+from typing import Sequence, Tuple
+
 import requests
 import requests.auth
 
@@ -36,28 +38,29 @@ class CloudFlare:
             ))
         return ret, zone_id
 
-    def remove(self, old, zone_id):
+    def remove(self, old, zone_id, origin):
         assert old.cf_id is not None
         print(f"removing {old}")
         resp = self.session.delete(f'https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records/{old.cf_id}')
         resp.raise_for_status()
 
-    def update(self, old, new, zone_id):
+    def update(self, old, new, zone_id, origin):
         assert old.cf_id is not None
         print(f"updating {old} to {new}")
-        resp = self.session.put(f'https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records/{old.cf_id}', json=new.json())
+        resp = self.session.put(f'https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records/{old.cf_id}', json=rr_to_json(new))
         resp.raise_for_status()
 
-    def add(self, new, zone_id):
+    def add(self, new, zone_id, origin):
         print(f"adding {new}")
-        resp = self.session.post(f'https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records', json=new.json())
+        resp = self.session.post(f'https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records', json=rr_to_json(new))
         resp.raise_for_status()
 
-    def apply(self, actions, zone_id):
-        for old, new in actions:
-            if old is None:
-                self.add(new, zone_id)
-            elif new is None:
-                self.remove(old, zone_id)
-            else:
-                self.update(old, new, zone_id)
+
+def rr_to_json(new):
+    return dict(
+        name=new.name,
+        type=new.type,
+        content=new.content,
+        ttl=new.ttl,
+        proxied=False,
+    )

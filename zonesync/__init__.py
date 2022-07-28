@@ -7,21 +7,12 @@ import re
 
 @dataclasses.dataclass(order=True, frozen=True)
 class RR:
-    name: str
+    name: str  # full name including expanded origin
     ttl: int
     type: str
     content: str
     cf_zone_id: Optional[str] = dataclasses.field(default=None, compare=False)
     cf_id: Optional[str] = dataclasses.field(default=None, compare=False)
-
-    def json(self):
-        return {
-            "name": self.name,
-            "ttl": self.ttl,
-            "type": self.type,
-            "content": self.content,
-            "proxied": False
-        }
 
 
 def load_file(fn, origin=None):
@@ -29,7 +20,7 @@ def load_file(fn, origin=None):
         return parse(f, origin)
 
 
-rr_re = re.compile(r'(?P<name>[a-z0-9.@-]+)\s+(?P<ttl>\d+)\s+IN\s+(?P<type>A|AAAA|CNAME|NS|SOA)\s+(?P<content>.*)')
+rr_re = re.compile(r'(?P<name>[a-z0-9.@_-]+)\s+(?P<ttl>\d+)\s+IN\s+(?P<type>A|AAAA|CNAME|NS|SOA|MX|TXT|SRV|ALIAS)\s+(?P<content>.*)')
 comment_re = re.compile(r'^$|^\s*;')
 origin_re = re.compile(r'^\$ORIGIN\s+(?P<name>[a-z0-9.@-]+)')
 

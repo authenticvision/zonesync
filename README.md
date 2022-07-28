@@ -1,6 +1,13 @@
 # zonesync
 
-Synchronize a zone file to a CloudFlare account.
+Synchronize a zone file to [CloudFlare](https://cloudflare.com/) or
+[INWX](https://inwx.de).
+
+The provider is selected automatically from the configured name servers.
+The `$ORIGIN` directive must be set to identify the zone.
+
+**Warning: Be very careful when using this, API interactions are not well
+tested and might produce unexpected records.**
 
 # Usage
 
@@ -11,10 +18,11 @@ $ python setup.py develop --user
 ```
 
 ```sh
-$ zonesync example.org.zone
+$ export INWX_USER=… INWX_PASSWORD=…
+$ zonesync -p inwx example.org.zone
 None -> RR(name='something.example.org.', ttl=3600, type='CNAME', content='example.org.', cf_zone_id=None, cf_id=None)
 None -> RR(name='something-else.example.org.', ttl=3600, type='CNAME', content='example.org.', cf_zone_id=None, cf_id=None)
-Apply actions? (Y/n)y
+Apply actions? (Y/n) y
 adding RR(name='something.example.org.', ttl=3600, type='CNAME', content='example.org.', cf_zone_id=None, cf_id=None)
 adding RR(name='something-else.example.org.', ttl=3600, type='CNAME', content='example.org.', cf_zone_id=None, cf_id=None)
 ```
