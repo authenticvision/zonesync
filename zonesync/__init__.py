@@ -20,7 +20,7 @@ def load_file(fn, origin=None):
         return parse(f, origin)
 
 
-rr_re = re.compile(r'(?P<name>[a-z0-9.@_-]+)\s+(?P<ttl>\d+)\s+IN\s+(?P<type>A|AAAA|CNAME|NS|SOA|MX|TXT|SRV|ALIAS)\s+(?P<content>.*)')
+rr_re = re.compile(r'(?P<name>[a-z0-9.@_*-]+)\s+(?P<ttl>\d+)\s+IN\s+(?P<type>A|AAAA|CNAME|NS|SOA|MX|TXT|SRV|ALIAS)\s+(?P<content>.*)')
 comment_re = re.compile(r'^$|^\s*;')
 origin_re = re.compile(r'^\$ORIGIN\s+(?P<name>[a-z0-9.@-]+)')
 
