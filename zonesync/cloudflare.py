@@ -3,7 +3,7 @@ from typing import Sequence, Tuple
 import requests
 import requests.auth
 
-from zonesync import RR
+from zonesync import RR, Provider
 
 
 class FuckOffAuth(requests.auth.AuthBase):
@@ -16,7 +16,7 @@ class FuckOffAuth(requests.auth.AuthBase):
         return r
 
 
-class CloudFlare:
+class CloudFlare(Provider):
     def __init__(self, api_token):
         if not api_token:
             raise ValueError("CloudFlare API Token required")

@@ -4,10 +4,10 @@ from typing import Sequence, Tuple
 import requests
 import requests.auth
 
-from zonesync import RR
+from zonesync import RR, Provider
 
 
-class Inwx:
+class Inwx(Provider):
     def __init__(self, user, password):
         self.session = requests.Session()
         self._api_call('account.login', **{'user': user, 'pass': password})  # 'pass' is a keyword

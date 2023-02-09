@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import dataclasses
 import typing
-from typing import Optional, Iterable, Tuple, Iterator
+from typing import Optional, Iterable, Tuple, Iterator, Annotated
 import re
 
 
@@ -13,6 +13,24 @@ class RR:
     content: str
     cf_zone_id: Optional[str] = dataclasses.field(default=None, compare=False)
     cf_id: Optional[str] = dataclasses.field(default=None, compare=False)
+
+
+Origin = Annotated[str, "An origin/zone name. Must end with a dot."]
+ZoneId = Annotated[str, "Provider-specific zone identifier"]
+
+
+class Provider:
+    def load(self, origin: Origin) -> Tuple[Iterable[RR], ZoneId]:
+        raise NotImplementedError()
+
+    def remove(self, old: RR, zone_id: ZoneId, origin: Origin):
+        raise NotImplementedError()
+
+    def update(self, old: RR, new: RR, zone_id: ZoneId, origin: Origin):
+        raise NotImplementedError()
+
+    def add(self, new: RR, zone_id: ZoneId, origin: Origin):
+        raise NotImplementedError()
 
 
 def load_file(fn, origin=None):
@@ -53,12 +71,24 @@ def parse(f: Iterable[str], origin: str = None) -> Tuple[typing.Sequence[RR], ty
     return ret, origin
 
 
+def normalize_origin(origin: str) -> Origin:
+    if not origin.endswith('.'):
+        return origin + '.'
+    return origin
+
+
 def normalize_rr(rr, origin):
     if rr.name == '@':
         rr = dataclasses.replace(rr, name=origin)
     elif not rr.name.endswith(origin):
         rr = dataclasses.replace(rr, name=rr.name + '.' + origin)
     return rr
+
+
+def shorten_name(name: str, origin: Origin) -> str:
+    if name == origin:
+        return '@'
+    return name.removesuffix('.' + origin)
 
 
 def no_soa_or_ns(rrs: Iterable[RR]) -> Iterator[RR]:

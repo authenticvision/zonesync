@@ -3,7 +3,6 @@
 Synchronize a zone file to [CloudFlare](https://cloudflare.com/) or
 [INWX](https://inwx.de).
 
-The provider is selected automatically from the configured name servers.
 The `$ORIGIN` directive must be set to identify the zone.
 
 **Warning: Be very careful when using this, API interactions are not well
