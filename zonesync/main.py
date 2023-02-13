@@ -22,7 +22,7 @@ def main():
         case 'cloudflare':
             api = zonesync.cloudflare.CloudFlare(os.environ.get('CLOUDFLARE_API_TOKEN'))
         case 'inwx':
-            api = zonesync.inwx.Inwx(os.environ['INWX_USER'], os.environ['INWX_PASSWORD'])
+            api = zonesync.inwx.Inwx(os.environ['INWX_USER'], os.environ['INWX_PASSWORD'], os.environ.get('INWX_TOTP'))
         case _:
             raise RuntimeError("No supported provider matched existing NS records")
 

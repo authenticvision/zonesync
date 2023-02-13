@@ -8,9 +8,13 @@ from zonesync import RR, Provider
 
 
 class Inwx(Provider):
-    def __init__(self, user, password):
+    def __init__(self, user, password, totp=None):
         self.session = requests.Session()
-        self._api_call('account.login', **{'user': user, 'pass': password})  # 'pass' is a keyword
+        resp = self._api_call('account.login', **{'user': user, 'pass': password})  # 'pass' is a keyword
+        if resp.get('tfa') == 'GOOGLE-AUTH':
+            if totp is None:
+                totp = input("Enter TOTP code: ")
+            self._api_call('account.unlock', tan=totp)
 
     def _api_call(self, method, **params):
         resp = self.session.post('https://api.domrobot.com/jsonrpc/', json=dict(method=method, params=params))
