@@ -80,7 +80,7 @@ def rr_to_json(new, origin):
         content=new.content,
         ttl=new.ttl,
     )
-    if new.content in ('CNAME', 'ALIAS'):
+    if new.type in ('CNAME', 'ALIAS'):
         j['content'] = new.content[:-1]  # we don't need the trailing dot
     elif new.type in ('MX', 'SRV'):
         idx = new.content.index(' ')
