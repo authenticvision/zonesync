@@ -29,15 +29,7 @@ class CloudFlare(Provider):
         resp = self.session.get(f'https://api.cloudflare.com/client/v4/zones', params={'name': origin})
         zone_id = resp.json()['result'][0]['id']
         resp = self.session.get(f'https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records?per_page=5000')
-        for rrj in resp.json()['result']:
-            ret.append(RR(
-                name=rrj['name'] + '.',
-                ttl=rrj['ttl'],
-                type=rrj['type'],
-                content=rrj['content'] + ('.' if rrj['type'] == 'CNAME' else ''),
-                cf_zone_id=zone_id,
-                cf_id=rrj['id'],
-            ))
+        ret = [json_to_rr(rrj) for rrj in resp.json()['result']]
         return ret, zone_id
 
     def remove(self, old, zone_id, origin):
@@ -58,11 +50,32 @@ class CloudFlare(Provider):
         resp.raise_for_status()
 
 
+def json_to_rr(rrj):
+    content = rrj['content']
+    if rrj['type'] in ('CNAME', 'ALIAS'):
+        content += '.'
+    elif rrj['type'] in ('MX', 'SRV'):
+        content = f"{rrj['priority']} {content}."
+    return RR(
+        name=rrj['name'] + '.',
+        ttl=rrj['ttl'],
+        type=rrj['type'],
+        content=content,
+        cf_zone_id=rrj['zone_id'],
+        cf_id=rrj['id'],
+    )
+
+
 def rr_to_json(new):
-    return dict(
+    j = dict(
         name=new.name,
         type=new.type,
         content=new.content,
         ttl=new.ttl,
         proxied=False,
     )
+    if new.type in ('MX', 'SRV'):
+        idx = new.content.index(' ')
+        j['content'] = new.content[idx + 1:-1]  # strip the trailing dot on the host for the api
+        j['priority'] = int(new.content[:idx])
+    return j
