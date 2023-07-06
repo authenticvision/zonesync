@@ -49,6 +49,9 @@ class CloudFlare(Provider):
         resp = self.session.post(f'https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records', json=rr_to_json(new))
         resp.raise_for_status()
 
+    def want_self_ns_records(self) -> bool:
+        return False
+
 
 def json_to_rr(rrj):
     content = ensure_trailing_dot(rrj['content'], rrj['type'])

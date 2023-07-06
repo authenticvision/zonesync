@@ -48,6 +48,9 @@ class Inwx(Provider):
         j['roId'] = zone_id
         self._api_call('nameserver.createRecord', **j)
 
+    def want_self_ns_records(self) -> bool:
+        return True
+
 
 def json_to_rr(rrj):
     content = ensure_trailing_dot(rrj['content'], rrj['type'])

@@ -32,6 +32,12 @@ class Provider:
     def add(self, new: RR, zone_id: ZoneId, origin: Origin):
         raise NotImplementedError()
 
+    def want_self_ns_records(self) -> bool:
+        """
+        Return True if the provider accepts changes to the NS records for the zone itself.
+        """
+        raise NotImplementedError()
+
 
 def load_file(fn, origin=None):
     with open(fn) as f:
@@ -89,6 +95,10 @@ def shorten_name(name: str, origin: Origin) -> str:
     if name == origin:
         return '@'
     return name.removesuffix('.' + origin)
+
+
+def no_soa(rrs: Iterable[RR]) -> Iterator[RR]:
+    return filter(lambda rr: rr.type not in ('SOA',), rrs)
 
 
 def no_soa_or_ns(rrs: Iterable[RR]) -> Iterator[RR]:

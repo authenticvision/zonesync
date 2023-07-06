@@ -50,8 +50,10 @@ def init(api: zonesync.Provider, args):
 def sync(api: zonesync.Provider, args):
     local, origin = zonesync.load_file(args.zonefile)
     remote, zone_id = api.load(origin)
-    local = zonesync.no_soa_or_ns(local)
-    remote = zonesync.no_soa_or_ns(remote)
+    local = zonesync.no_soa(local)
+    if not api.want_self_ns_records():
+        local = filter(lambda rr: not (rr.type == 'NS' and rr.name == origin), local)
+    remote = zonesync.no_soa(remote)
     actions = zonesync.diff(remote, local)
     if len(actions) == 0:
         print("Nothing to do")
