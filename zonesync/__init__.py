@@ -123,3 +123,27 @@ def diff_generator(old: Iterable[RR], new: Iterable[RR]) -> Iterable[Tuple[OldRR
         yield r, None
     for r in rem_it:
         yield r, None
+
+
+def ensure_trailing_dot(name: str, typ: Optional[str] = None) -> str:
+    if typ not in ('CNAME', 'ALIAS', 'NS', 'MX', 'SRV', None):
+        return name
+    if name.endswith('.'):
+        return name
+    return name + '.'
+
+
+def strip_trailing_dot(name: str, typ: Optional[str] = None) -> str:
+    if typ not in ('CNAME', 'ALIAS', 'NS', 'MX', 'SRV', None):
+        return name
+    if not name.endswith('.'):
+        return name
+    return name.rstrip('.')
+
+
+def strip_origin(name: str, origin: Origin) -> str:
+    if name == origin:
+        return '@'
+    if not name.endswith('.' + origin):
+        raise ValueError(f"Name {name!r} must end with origin {origin!r}")
+    return name[:-(len(origin)+1)]

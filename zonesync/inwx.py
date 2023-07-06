@@ -4,7 +4,7 @@ from typing import Sequence, Tuple
 import requests
 import requests.auth
 
-from zonesync import RR, Provider
+from zonesync import RR, Provider, ensure_trailing_dot, strip_origin, Origin, strip_trailing_dot
 
 
 class Inwx(Provider):
@@ -50,17 +50,15 @@ class Inwx(Provider):
 
 
 def json_to_rr(rrj):
-    content = rrj['content']
-    if rrj['type'] in ('CNAME', 'ALIAS'):
-        content += '.'
-    elif rrj['type'] in ('MX', 'SRV'):
-        content = f"{rrj['prio']} {content}."
+    content = ensure_trailing_dot(rrj['content'], rrj['type'])
+    if rrj['type'] in ('MX', 'SRV'):
+        content = f"{rrj['prio']} {content}"
     elif rrj['type'] == 'TXT' and not rrj['content'].startswith('"'):
         content = f'"{content}"'
         # TODO: might cause false positive difference if local values are unquoted.
         # submitting a quoted single value will cause inwx to unquote it.
     return RR(
-        name=rrj['name'] + '.',
+        name=ensure_trailing_dot(rrj['name']),  # already is a full domain including origin but without trailing dot
         ttl=rrj['ttl'],
         type=rrj['type'],
         content=content,
@@ -68,22 +66,13 @@ def json_to_rr(rrj):
     )
 
 
-def rr_to_json(new, origin):
-    # strip the origin, inwx doesn't like that
-    name = new.name[:-len(origin)]
-    if name != '':
-        # if it's a subdomain, strip the trailing dot
-        name = name[:-1]
+def rr_to_json(new: RR, origin: Origin):
     j = dict(
-        name=name,
+        name=strip_origin(new.name, origin),  # must be a subdomain only for submitting
         type=new.type,
-        content=new.content,
+        content=strip_trailing_dot(new.content, new.type),
         ttl=new.ttl,
     )
-    if new.type in ('CNAME', 'ALIAS'):
-        j['content'] = new.content[:-1]  # we don't need the trailing dot
-    elif new.type in ('MX', 'SRV'):
-        idx = new.content.index(' ')
-        j['content'] = new.content[idx + 1:-1]  # strip the trailing dot on the host for the api
-        j['prio'] = int(new.content[:idx])
+    if new.type in ('MX', 'SRV'):
+        j['priority'], _, j['content'] = j['content'].partition(' ')
     return j

@@ -3,7 +3,7 @@ from typing import Sequence, Tuple
 import requests
 import requests.auth
 
-from zonesync import RR, Provider
+from zonesync import RR, Provider, ensure_trailing_dot, strip_trailing_dot
 
 
 class FuckOffAuth(requests.auth.AuthBase):
@@ -51,13 +51,11 @@ class CloudFlare(Provider):
 
 
 def json_to_rr(rrj):
-    content = rrj['content']
-    if rrj['type'] in ('CNAME', 'ALIAS'):
-        content += '.'
-    elif rrj['type'] in ('MX', 'SRV'):
-        content = f"{rrj['priority']} {content}."
+    content = ensure_trailing_dot(rrj['content'], rrj['type'])
+    if rrj['type'] in ('MX', 'SRV'):
+        content = f"{rrj['priority']} {content}"
     return RR(
-        name=rrj['name'] + '.',
+        name=ensure_trailing_dot(rrj['name']),
         ttl=rrj['ttl'],
         type=rrj['type'],
         content=content,
@@ -66,16 +64,14 @@ def json_to_rr(rrj):
     )
 
 
-def rr_to_json(new):
+def rr_to_json(new: RR):
     j = dict(
-        name=new.name,
+        name=strip_trailing_dot(new.name),
         type=new.type,
-        content=new.content,
+        content=strip_trailing_dot(new.content, new.type),
         ttl=new.ttl,
         proxied=False,
     )
     if new.type in ('MX', 'SRV'):
-        idx = new.content.index(' ')
-        j['content'] = new.content[idx + 1:-1]  # strip the trailing dot on the host for the api
-        j['priority'] = int(new.content[:idx])
+        j['priority'], _, j['content'] = j['content'].partition(' ')
     return j
