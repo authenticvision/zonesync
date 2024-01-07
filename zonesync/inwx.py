@@ -77,5 +77,5 @@ def rr_to_json(new: RR, origin: Origin):
         ttl=new.ttl,
     )
     if new.type in ('MX', 'SRV'):
-        j['priority'], _, j['content'] = j['content'].partition(' ')
+        j['prio'], _, j['content'] = j['content'].partition(' ')
     return j
