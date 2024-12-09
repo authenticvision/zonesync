@@ -20,7 +20,7 @@ def main():
 
     match args.provider:
         case 'cloudflare':
-            api = zonesync.cloudflare.CloudFlare(os.environ.get('CLOUDFLARE_API_TOKEN'))
+            api = zonesync.cloudflare.Cloudflare(os.environ.get('CLOUDFLARE_API_TOKEN'))
         case 'inwx':
             api = zonesync.inwx.Inwx(os.environ['INWX_USER'], os.environ['INWX_PASSWORD'], os.environ.get('INWX_TOTP'))
         case _:

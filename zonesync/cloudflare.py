@@ -16,10 +16,10 @@ class FuckOffAuth(requests.auth.AuthBase):
         return r
 
 
-class CloudFlare(Provider):
+class Cloudflare(Provider):
     def __init__(self, api_token):
         if not api_token:
-            raise ValueError("CloudFlare API Token required")
+            raise ValueError("Cloudflare API Token required")
         self.session = s = requests.Session()
         s.headers['Authorization'] = f'Bearer {api_token}'
         s.auth = FuckOffAuth()
