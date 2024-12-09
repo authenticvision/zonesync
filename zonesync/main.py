@@ -59,7 +59,7 @@ def sync(api: zonesync.Provider, args):
         print("Nothing to do")
         return
     for old, new in actions:
-        print(f"{old}->\n{new}")
+        print(f"{old}\n    => {new}\n")
     if input("Apply actions? (y/N) ") not in ('Y', 'y'):
         return
 
