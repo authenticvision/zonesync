@@ -57,9 +57,15 @@ def json_to_rr(rrj):
     content = ensure_trailing_dot(rrj['content'], rrj['type'])
     if rrj['type'] in ('MX', 'SRV'):
         content = f"{rrj['priority']} {content}"
+
+    if rrj['proxied']:
+        ttl = 0 # sentinel for rr_to_json
+    else:
+        ttl = rrj['ttl']
+
     return RR(
         name=ensure_trailing_dot(rrj['name']),
-        ttl=rrj['ttl'],
+        ttl=ttl,
         type=rrj['type'],
         content=content,
         cf_zone_id=rrj['zone_id'],
@@ -68,13 +74,21 @@ def json_to_rr(rrj):
 
 
 def rr_to_json(new: RR):
+    ttl = new.ttl
+    proxied = False
+    if ttl == 0:
+        ttl = 1 # automatic is the only value permitted for proxied records
+        proxied = True
+
     j = dict(
         name=strip_trailing_dot(new.name),
         type=new.type,
         content=strip_trailing_dot(new.content, new.type),
-        ttl=new.ttl,
-        proxied=False,
+        ttl=ttl,
+        proxied=proxied,
     )
+
     if new.type in ('MX', 'SRV'):
         j['priority'], _, j['content'] = j['content'].partition(' ')
+
     return j
