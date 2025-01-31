@@ -1,3 +1,5 @@
-/.idea/
-/zonesync.egg-info/
+.idea/
 __pycache__/
+build/
+dist/
+zonesync.egg-info/
