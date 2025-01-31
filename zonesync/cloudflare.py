@@ -29,7 +29,7 @@ class Cloudflare(Provider):
         resp = self.session.get(f'https://api.cloudflare.com/client/v4/zones', params={'name': origin})
         zone_id = resp.json()['result'][0]['id']
         resp = self.session.get(f'https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records?per_page=5000')
-        ret = [json_to_rr(rrj) for rrj in resp.json()['result']]
+        ret = [json_to_rr(rrj, zone_id) for rrj in resp.json()['result']]
         return ret, zone_id
 
     def remove(self, old, zone_id, origin):
@@ -53,7 +53,7 @@ class Cloudflare(Provider):
         return False
 
 
-def json_to_rr(rrj):
+def json_to_rr(rrj, zone_id):
     content = ensure_trailing_dot(rrj['content'], rrj['type'])
     if rrj['type'] in ('MX', 'SRV'):
         content = f"{rrj['priority']} {content}"
@@ -68,7 +68,7 @@ def json_to_rr(rrj):
         ttl=ttl,
         type=rrj['type'],
         content=content,
-        cf_zone_id=rrj['zone_id'],
+        cf_zone_id=zone_id,
         cf_id=rrj['id'],
     )
 
