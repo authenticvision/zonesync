@@ -3,6 +3,7 @@ from typing import Sequence, Tuple
 
 import requests
 import requests.auth
+from requests.cookies import cookiejar_from_dict
 
 from zonesync import RR, Provider, ensure_trailing_dot, strip_origin, Origin, strip_trailing_dot
 
@@ -10,11 +11,15 @@ from zonesync import RR, Provider, ensure_trailing_dot, strip_origin, Origin, st
 class Inwx(Provider):
     def __init__(self, user, password, totp=None):
         self.session = requests.Session()
+        if session_id := os.environ.get('INWX_SESSION'):
+            self.session.cookies = cookiejar_from_dict({'domrobot': session_id})
+            return
         resp = self._api_call('account.login', **{'user': user, 'pass': password})  # 'pass' is a keyword
         if resp.get('tfa') == 'GOOGLE-AUTH':
             if totp is None:
                 totp = input("Enter TOTP code: ")
             self._api_call('account.unlock', tan=totp)
+        print(f"To skip further logins: export INWX_SESSION={self.session.cookies.get('domrobot')}")
 
     def _api_call(self, method, **params):
         resp = self.session.post('https://api.domrobot.com/jsonrpc/', json=dict(method=method, params=params))
