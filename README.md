@@ -13,7 +13,7 @@ tested and might produce unexpected records.**
 Quick dev setup install:
 
 ```sh
-$ python setup.py develop --user
+$ uv tool install -e .
 ```
 
 ```sh
