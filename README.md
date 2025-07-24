@@ -16,6 +16,11 @@ Quick dev setup install:
 $ uv tool install -e .
 ```
 
+`zonesync` is now available in your `$PATH` according to uv's [bin dir selection rules](https://docs.astral.sh/uv/concepts/tools/#the-bin-directory).
+
+Any changes you make to zonesync are available immediately.
+Dependency or Python version changes require running `uv sync` again from zonesync's repo directory.
+
 ```sh
 $ export INWX_USER=… INWX_PASSWORD=…
 $ zonesync -p inwx example.org.zone

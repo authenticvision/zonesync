@@ -1,0 +1,8 @@
+[project]
+name = "zonesync"
+version = "0.0.1"
+dependencies = ["requests"]
+requires-python = ">=3.12"
+
+[project.scripts]
+zonesync = "zonesync.main:main"
