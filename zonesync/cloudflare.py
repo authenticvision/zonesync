@@ -3,7 +3,7 @@ from typing import Sequence, Tuple
 import requests
 import requests.auth
 
-from zonesync import RR, Provider, ensure_trailing_dot, strip_trailing_dot
+from zonesync import RR, Provider, ZonesyncError, ensure_trailing_dot, strip_trailing_dot
 
 
 class FuckOffAuth(requests.auth.AuthBase):
@@ -19,38 +19,58 @@ class FuckOffAuth(requests.auth.AuthBase):
 class Cloudflare(Provider):
     def __init__(self, api_token):
         if not api_token:
-            raise ValueError("Cloudflare API Token required")
+            raise ZonesyncError("Cloudflare API Token required (set CLOUDFLARE_API_TOKEN)")
         self.session = s = requests.Session()
         s.headers['Authorization'] = f'Bearer {api_token}'
         s.auth = FuckOffAuth()
 
     def load(self, origin):
-        ret = []
         resp = self.session.get(f'https://api.cloudflare.com/client/v4/zones', params={'name': origin})
-        zone_id = resp.json()['result'][0]['id']
+        zones = result(resp, f"looking up zone {origin}")
+        if not zones:
+            raise ZonesyncError(f"No Cloudflare zone named {origin}")
+        zone_id = zones[0]['id']
         resp = self.session.get(f'https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records?per_page=5000')
-        ret = [json_to_rr(rrj, zone_id) for rrj in resp.json()['result']]
+        ret = [json_to_rr(rrj, zone_id) for rrj in result(resp, f"listing records of {origin}")]
         return ret, zone_id
 
     def remove(self, old, zone_id, origin):
         assert old.cf_id is not None
         print(f"removing {old}")
         resp = self.session.delete(f'https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records/{old.cf_id}')
-        resp.raise_for_status()
+        result(resp, f"removing {old}")
 
     def update(self, old, new, zone_id, origin):
         assert old.cf_id is not None
         print(f"updating {old} to {new}")
         resp = self.session.put(f'https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records/{old.cf_id}', json=rr_to_json(new))
-        resp.raise_for_status()
+        result(resp, f"updating {old}")
 
     def add(self, new, zone_id, origin):
         print(f"adding {new}")
         resp = self.session.post(f'https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records', json=rr_to_json(new))
-        resp.raise_for_status()
+        result(resp, f"adding {new}")
 
     def want_self_ns_records(self) -> bool:
         return False
+
+
+def result(resp, what):
+    """
+    Return the `result` of a Cloudflare API response, or raise a readable error
+    """
+    try:
+        j = resp.json()
+    except ValueError:
+        j = {}
+
+    if resp.ok and j.get('success') and j.get('result') is not None:
+        return j['result']
+
+    errors = "; ".join(f"{e.get('message')} (code {e.get('code')})" for e in j.get('errors') or [])
+    if not errors:
+        errors = resp.text.strip() or f"HTTP {resp.status_code}"
+    raise ZonesyncError(f"Cloudflare API error while {what}: {errors}")
 
 
 def json_to_rr(rrj, zone_id):

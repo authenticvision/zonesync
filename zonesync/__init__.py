@@ -19,6 +19,12 @@ Origin = Annotated[str, "An origin/zone name. Must end with a dot."]
 ZoneId = Annotated[str, "Provider-specific zone identifier"]
 
 
+class ZonesyncError(Exception):
+    """
+    An error that is reported to the user as a message instead of a traceback
+    """
+
+
 class Provider:
     def load(self, origin: Origin) -> Tuple[Iterable[RR], ZoneId]:
         raise NotImplementedError()

@@ -1,10 +1,11 @@
 import argparse
 import os
 import re
+import sys
 import zonesync
 import zonesync.cloudflare
 import zonesync.inwx
-from zonesync import normalize_origin
+from zonesync import ZonesyncError, normalize_origin
 
 
 def main():
@@ -18,21 +19,25 @@ def main():
     initp.add_argument('origin', help="Zone to fetch records from")
     args = p.parse_args()
 
-    match args.provider:
-        case 'cloudflare':
-            api = zonesync.cloudflare.Cloudflare(os.environ.get('CLOUDFLARE_API_TOKEN'))
-        case 'inwx':
-            api = zonesync.inwx.Inwx(os.environ['INWX_USER'], os.environ['INWX_PASSWORD'], os.environ.get('INWX_TOTP'))
-        case _:
-            raise RuntimeError("No supported provider matched existing NS records")
+    try:
+        match args.provider:
+            case 'cloudflare':
+                api = zonesync.cloudflare.Cloudflare(os.environ.get('CLOUDFLARE_API_TOKEN'))
+            case 'inwx':
+                api = zonesync.inwx.Inwx(os.environ['INWX_USER'], os.environ['INWX_PASSWORD'], os.environ.get('INWX_TOTP'))
+            case _:
+                raise RuntimeError("No supported provider matched existing NS records")
 
-    match args.cmd:
-        case 'sync':
-            sync(api, args)
-        case 'init':
-            init(api, args)
-        case _:
-            raise KeyError(f"Unknown command {args.cmd!r}")
+        match args.cmd:
+            case 'sync':
+                sync(api, args)
+            case 'init':
+                init(api, args)
+            case _:
+                raise KeyError(f"Unknown command {args.cmd!r}")
+    except ZonesyncError as e:
+        print(e, file=sys.stderr)
+        return 1
 
 
 def init(api: zonesync.Provider, args):
